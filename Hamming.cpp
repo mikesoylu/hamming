@@ -11,7 +11,7 @@ bool Hamming::getBit(unsigned char byte, int bit) {
 }
 
 void Hamming::setBit(char &byte, int bit, bool value) {
-    unsigned char mask = 128 >> bit;
+    char mask = 128 >> bit;
     if (value) {
         byte |= mask;
     } else {
@@ -69,12 +69,12 @@ void Hamming::decode() {
     int errBit = -1;
     // fix error
     for (int i = 1; i < packet_length*8; i <<= 1) {
-        if (getBit(packet[(i-1)], (i-1)%8) != getParityBit(packet, i, packet_length*8)) {
+        if (getBit(packet[(i-1)/8], (i-1)%8) != getParityBit(packet, i, packet_length*8)) {
             errBit += i;
         }
     }
 
-    if (errBit != -1) {
+    if (errBit != -1 && errBit < packet_length) {
         setBit(packet[errBit/8], errBit%8, !getBit(packet[errBit/8], errBit%8));
 #ifdef DEBUG
         printf("fixed error at %d\n", errBit);
@@ -88,8 +88,15 @@ void Hamming::decode() {
             int bit = i*8 + j;
             // is it a parity bit
             if (!IS_POWER_OF_TWO(bit + 1)) {
+#ifdef DEBUG
+                printf("i:%dj:%d di:%d dj:%d\n", i, j, destBit/8, destBit%8);
+#endif
                 setBit(dest[destBit/8], destBit%8, getBit(packet[i], j));
                 destBit++;
+                // bail if we're at the edge
+                if (destBit == getDecodedLength(packet_length)*8) {
+                    return;
+                }
             }
         }
     }

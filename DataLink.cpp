@@ -4,9 +4,12 @@
 #include "DataLink.h"
 #include "Hamming.h"
 #include "UChannel.h"
-#include <math.h>
+#include <algorithm>
+
+using std::min;
 
 void DataLink::send(int port, char* packet, int packet_length) {
+    UChannel channel;
     for (int i = 0; i < packet_length; i += SUBPACKET_SIZE) {
         // get size of the current subpacket
         int subpacket_length = min(packet_length-i, SUBPACKET_SIZE);
@@ -19,7 +22,7 @@ void DataLink::send(int port, char* packet, int packet_length) {
         encoder.encode();
 
         // send it off
-        u_send(port, encoded, subpacket_length);
+        channel.u_send(port, encoded, subpacket_length);
 
         // clean up
         delete [] encoded;
@@ -27,16 +30,21 @@ void DataLink::send(int port, char* packet, int packet_length) {
 }
 
 void DataLink::receive(int port, char* packet, int packet_length) {
+    UChannel channel;
     for (int i = 0; i < packet_length; i += SUBPACKET_SIZE) {
         // get size of the current subpacket
         int subpacket_length = min(packet_length-i, SUBPACKET_SIZE);
         int encoded_length = Hamming::getEncodedLength(subpacket_length);
 
+#ifdef DEBUG
+        printf("alloc'ing %d bytes for encoded data\n", encoded_length);
+#endif
+
         // alloc space for the encoded subpacket
         char *encoded = new char[encoded_length];
 
         // receive encoded data
-        u_recv(port, encoded, encoded_length);
+        channel.u_recv(port, encoded, encoded_length);
 
         // decode the encoded data
         Hamming decoder(encoded, packet+i, encoded_length);
