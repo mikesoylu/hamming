@@ -23,7 +23,10 @@ bool Hamming::getParityBit(char *data, int bit, int data_bits) {
     // convert to bit length
     int numOnes = 0;
     for (int j = bit-1; j < data_bits; j += 2*bit) {
-        for (int k = j; k < j+bit && k < data_bits; k++){
+        for (int k = j; k < j+bit && k < data_bits; k++) {
+            if (j == bit-1 && k == j) {
+                continue;
+            }
             if (getBit(data[k/8], k%8)) {
                 numOnes++;
             }
@@ -52,7 +55,7 @@ void Hamming::encode() {
     }
 
     // the full length in bits
-    int fullLen = (int)ceil(destBit/8.0)*8;
+    int fullLen = ((int)ceil(destBit/8.0)) << 3;
 
     // 0-out the unused bits
     for (int i = destBit; i < fullLen; i++) {
@@ -70,11 +73,14 @@ void Hamming::decode() {
     // fix error
     for (int i = 1; i < packet_length*8; i <<= 1) {
         if (getBit(packet[(i-1)/8], (i-1)%8) != getParityBit(packet, i, packet_length*8)) {
+            if (-1 == errBit) {
+                errBit = 0;
+            }
             errBit += i;
         }
     }
 
-    if (errBit != -1 && errBit < packet_length) {
+    if (errBit != -1 && errBit < packet_length*8) {
         setBit(packet[errBit/8], errBit%8, !getBit(packet[errBit/8], errBit%8));
 #ifdef DEBUG
         printf("fixed error at %d\n", errBit);
@@ -88,9 +94,6 @@ void Hamming::decode() {
             int bit = i*8 + j;
             // is it a parity bit
             if (!IS_POWER_OF_TWO(bit + 1)) {
-#ifdef DEBUG
-                printf("i:%dj:%d di:%d dj:%d\n", i, j, destBit/8, destBit%8);
-#endif
                 setBit(dest[destBit/8], destBit%8, getBit(packet[i], j));
                 destBit++;
                 // bail if we're at the edge
@@ -103,27 +106,17 @@ void Hamming::decode() {
 }
 
 int Hamming::getEncodedLength(int packet_length) {
-    int i;
-    // turn it into packet length in bits
-    packet_length <<= 3;
-    for (i = 1; i < packet_length; i++) {
-        if (pow(2, i) > packet_length) {
-            break;
-        }
+    if (packet_length < 31) {
+        return packet_length + 1;
     }
-    return (int)ceil((packet_length + i)/8.0);
+    return packet_length + 2;
 }
 
 int Hamming::getDecodedLength(int packet_length) {
-    int i, j = 0;
-    // turn it into packet length in bits
-    packet_length <<= 3;
-    for (i = 1; i < packet_length + 1; i++) {
-        if (!IS_POWER_OF_TWO(i)) {
-            j++;
-        }
+    if (packet_length < 33) {
+        return packet_length - 1;
     }
-    return j/8;
+    return packet_length - 2;
 }
 
 bool Hamming::test() {
@@ -136,13 +129,12 @@ bool Hamming::test() {
         setBit(c, 4, true);
         printf("test: setBit(192, 3, true)\nreturns:%u\n", 0xFF&c);
     }
-    printf("test: getEncodedLength(1)\nreturns:%d\n", getEncodedLength(1));
-    printf("test: getEncodedLength(2)\nreturns:%d\n", getEncodedLength(2));
-    printf("test: getEncodedLength(16)\nreturns:%d\n", getEncodedLength(16));
-    printf("test: getEncodedLength(32)\nreturns:%d\n", getEncodedLength(32));
-    printf("test: getEncodedLength(4)\nreturns:%d\n", getEncodedLength(4));
-    printf("test: getDecodedLength(3)\nreturns:%d\n", getDecodedLength(3));
-    printf("test: getDecodedLength(6)\nreturns:%d\n", getDecodedLength(6));
+    for (int i = 20; i< 40; i++) {
+        printf("test: getEncodedLength(%d)\nreturns:%d\n", i, getEncodedLength(i));
+    }
+    for (int i = 20; i< 40; i++) {
+        printf("test: getDecodedLength(%d)\nreturns:%d\n", i, getDecodedLength(i));
+    }
     {
         printf("test: encode(\"");
         for (int i = 0; i < 1; i++) {

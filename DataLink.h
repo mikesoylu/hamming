@@ -4,7 +4,7 @@
 #ifndef DATA_LINK_H
 #define DATA_LINK_H
 
-#define SUBPACKET_SIZE 16
+#define SUBPACKET_SIZE 20
 
 class DataLink {
 	private:

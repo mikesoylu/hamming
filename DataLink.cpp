@@ -25,7 +25,7 @@ void DataLink::send(int port, char* packet, int packet_length) {
         encoder.encode();
 
         // send it off
-        channel.u_send(port, encoded, subpacket_length);
+        channel.u_send(port, encoded, Hamming::getEncodedLength(subpacket_length));
 
         // clean up
         delete [] encoded;
@@ -47,16 +47,25 @@ void DataLink::receive(int port, char* packet, int packet_length) {
 
         // alloc space for the encoded subpacket
         char *encoded = new char[encoded_length];
+        char *decoded = new char[subpacket_length];
 
         // receive encoded data
         channel.u_recv(port, encoded, encoded_length);
 
         // decode the encoded data
-        Hamming decoder(encoded, packet+i, encoded_length);
+        Hamming decoder(encoded, decoded, encoded_length);
         decoder.decode();
+
+        // copy decoded data to packet
+        memcpy(packet+i, decoded, subpacket_length);
+
+#ifdef DEBUG
+        printf("decoded: %s\n", decoded);
+#endif
 
         // clean up
         delete [] encoded;
+        delete [] decoded;
 
         i+= subpacket_length;
     }

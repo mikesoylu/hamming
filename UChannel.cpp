@@ -5,9 +5,11 @@
 #include "UChannel.h"
 
 UChannel::UChannel(){
-	packet_error_rate = 0.8;
+	//packet_error_rate = 0.8;
+	packet_error_rate = 0.0;
 	packet_second_error_rate = 0.0;
-	packet_send_delay = 0.05;
+	//packet_send_delay = 0.05;
+	packet_send_delay = 0.1;
 }
 
 void UChannel::diep(char * s)
