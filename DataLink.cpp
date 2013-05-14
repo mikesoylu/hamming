@@ -59,10 +59,6 @@ void DataLink::receive(int port, char* packet, int packet_length) {
         // copy decoded data to packet
         memcpy(packet+i, decoded, subpacket_length);
 
-#ifdef DEBUG
-        printf("decoded: %s\n", decoded);
-#endif
-
         // clean up
         delete [] encoded;
         delete [] decoded;

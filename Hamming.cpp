@@ -20,10 +20,10 @@ void Hamming::setBit(char &byte, int bit, bool value) {
 }
 
 bool Hamming::getParityBit(char *data, int bit, int data_bits) {
-    // convert to bit length
     int numOnes = 0;
     for (int j = bit-1; j < data_bits; j += 2*bit) {
         for (int k = j; k < j+bit && k < data_bits; k++) {
+            // skip the first one
             if (j == bit-1 && k == j) {
                 continue;
             }
@@ -44,7 +44,6 @@ void Hamming::encode() {
             // is it not a parity bit?
             if (IS_POWER_OF_TWO(destBit+1)) {
                 // then set dest bit to packet bit
-                setBit(dest[destBit/8], destBit%8, false);
                 destBit++;
                 j--;
             } else {
@@ -56,6 +55,9 @@ void Hamming::encode() {
 
     // the full length in bits
     int fullLen = ((int)ceil(destBit/8.0)) << 3;
+#ifdef DEBUG
+    printf("full length of the packet: %d\n", fullLen);
+#endif
 
     // 0-out the unused bits
     for (int i = destBit; i < fullLen; i++) {
@@ -79,14 +81,14 @@ void Hamming::decode() {
             errBit += i;
         }
     }
-
-    if (errBit != -1 && errBit < packet_length*8) {
+    if (errBit != -1) {
+        // pull to 0 index
+        errBit -= 1;
         setBit(packet[errBit/8], errBit%8, !getBit(packet[errBit/8], errBit%8));
 #ifdef DEBUG
         printf("fixed error at %d\n", errBit);
 #endif
     }
-
     // write data
     int destBit = 0;
     for (int i = 0; i < packet_length; i++) {
@@ -96,10 +98,6 @@ void Hamming::decode() {
             if (!IS_POWER_OF_TWO(bit + 1)) {
                 setBit(dest[destBit/8], destBit%8, getBit(packet[i], j));
                 destBit++;
-                // bail if we're at the edge
-                if (destBit == getDecodedLength(packet_length)*8) {
-                    return;
-                }
             }
         }
     }

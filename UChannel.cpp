@@ -5,11 +5,9 @@
 #include "UChannel.h"
 
 UChannel::UChannel(){
-	//packet_error_rate = 0.8;
-	packet_error_rate = 0.0;
+	packet_error_rate = 0.8;
 	packet_second_error_rate = 0.0;
-	//packet_send_delay = 0.05;
-	packet_send_delay = 0.1;
+	packet_send_delay = 0.05;
 }
 
 void UChannel::diep(char * s)
@@ -61,7 +59,7 @@ void UChannel::u_send(int port, char* packet, int packet_length) {
 	    }
         }
 
-	printf("Sending packet: %s\n", packet);
+	//printf("Sending packet: %s\n", packet);
 
         // send the response to the client at "address" and "port" 
 	if (sendto(s, packet, packet_length, 0, (struct sockaddr*)&si_other, slen)==-1)  diep("sendto()");
@@ -87,7 +85,7 @@ void UChannel::u_recv(int port, char* packet, int packet_length) {
 
 	if (recvfrom(s, packet, packet_length, 0, (struct sockaddr *)&si_other, (socklen_t*)&slen)==-1) diep("recvfrom()");
         
-	printf("Received packet: %s\n", packet);
+	//printf("Received packet: %s\n", packet);
 
         close(s);
 

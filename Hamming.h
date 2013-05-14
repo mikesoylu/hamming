@@ -4,7 +4,7 @@
 #ifndef HAMMING_H
 #define HAMMING_H
 
-#define IS_POWER_OF_TWO(x) (!(x & (x - 1)) && x)
+#define IS_POWER_OF_TWO(x) (!((x) & ((x) - 1)) && (x))
 
 class Hamming {
     private:
