@@ -12,8 +12,8 @@ class Hamming {
         char *packet;
         char *dest;
 
-        bool getBit(char byte, int bit);
-        void setBit(char &byte, int bit, bool value);
+        static bool getBit(unsigned char byte, int bit);
+        static void setBit(char &byte, int bit, bool value);
 
     public:
         Hamming(char *packet, char *dest, int packet_length):
