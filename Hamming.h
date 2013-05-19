@@ -8,22 +8,35 @@
 
 class Hamming {
     private:
-        bool getBit(unsigned char byte, int bit);
+        int packet_length;
+        char *packet;
+        char *dest;
+
+        bool getBit(char byte, int bit);
+        void setBit(char &byte, int bit, bool value);
 
     public:
+        Hamming(char *packet, char *dest, int packet_length):
+            packet(packet), dest(dest), packet_length(packet_length) { };
+
         // encodes a packet of length getEncodedLength
         // dest should be alloc'd before calling.(use getEncodedLength)
-        void encode(char *packet, char *dest, int packet_length);
+        void encode();
 
         // decodes a packet of length getDecodedLength
         // dest should be alloc'd before calling.(use getDecodedLength)
-        void decode(char *packet, char *dest, int packet_length);
+        void decode();
 
         // returns length of a packet when encoded
-        int getEncodedLength(int packet_length);
+        static int getEncodedLength(int packet_length);
 
         // returns length of a packet when decoded
-        int getDecodedLength(int packet_length);
+        static int getDecodedLength(int packet_length);
+
+#ifdef DEBUG
+        // unit tests
+        static bool test();
+#endif
 };
 
 #endif
