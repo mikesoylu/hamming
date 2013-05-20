@@ -36,10 +36,8 @@ class Hamming {
         // returns length of a packet when decoded
         static int getDecodedLength(int packet_length);
 
-#ifdef DEBUG
         // unit tests
         static bool test();
-#endif
 };
 
 #endif

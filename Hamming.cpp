@@ -51,32 +51,34 @@ void Hamming::encode() {
         }
     }
 
+    // the full length in bits
+    int fullLen = (int)ceil(destBit/8.0)*8;
+
     // 0-out the unused bits
-    for (int i = destBit; i < (int)ceil(destBit/8.0)*8; i++) {
+    for (int i = destBit; i < fullLen; i++) {
         setBit(dest[i/8], i%8, false);
     }
 
     // write parity bits
-    for (int i = 1; i < destBit; i <<= 1) {
-        setBit(dest[(i-1)/8], (i-1)%8, getParityBit(dest, i, destBit));
+    for (int i = 1; i < fullLen; i <<= 1) {
+        setBit(dest[(i-1)/8], (i-1)%8, getParityBit(dest, i, fullLen));
     }
 }
 
 void Hamming::decode() {
     int errBit = -1;
     // fix error
-    for (int i = 0; i < packet_length; i++) {
-        for (int j = 0; j < 8; j++) {
-            int bit = i*8 + j;
-            // is it a parity bit
-            if (IS_POWER_OF_TWO(bit + 1) &&
-                    getBit(packet[i], j) != getParityBit(packet, bit+1, packet_length*8)) {
-                errBit += bit + 1;
-            }
+    for (int i = 1; i < packet_length*8; i <<= 1) {
+        if (getBit(packet[(i-1)], (i-1)%8) != getParityBit(packet, i, packet_length*8)) {
+            errBit += i;
         }
     }
+
     if (errBit != -1) {
         setBit(packet[errBit/8], errBit%8, !getBit(packet[errBit/8], errBit%8));
+#ifdef DEBUG
+        printf("fixed error at %d\n", errBit);
+#endif
     }
 
     // write data
@@ -87,6 +89,7 @@ void Hamming::decode() {
             // is it a parity bit
             if (!IS_POWER_OF_TWO(bit + 1)) {
                 setBit(dest[destBit/8], destBit%8, getBit(packet[i], j));
+                destBit++;
             }
         }
     }
@@ -116,7 +119,6 @@ int Hamming::getDecodedLength(int packet_length) {
     return j/8;
 }
 
-#ifdef DEBUG
 bool Hamming::test() {
     // 200 == 11001000
     printf("test: getBit(200, 7)\nreturns:%d\n", getBit(200, 0));
@@ -147,8 +149,16 @@ bool Hamming::test() {
         for (int i = 0; i < len; i++) {
             printf("%x ", 0xFF&encoded[i]);
         }
+        printf("\ndecoded:");
+        char *decoded = new char[1];
+        Hamming h2(encoded, decoded, len);
+        h2.decode();
+        for (int i = 0; i < 1; i++) {
+            printf("%x ", 0xFF&decoded[i]);
+        }
         printf("\n");
         delete [] encoded;
+        delete [] decoded;
     }
     {
         printf("test: encode(\"");
@@ -163,8 +173,16 @@ bool Hamming::test() {
         for (int i = 0; i < len; i++) {
             printf("%x ", 0xFF&encoded[i]);
         }
+        printf("\ndecoded:");
+        char *decoded = new char[2];
+        Hamming h2(encoded, decoded, len);
+        h2.decode();
+        for (int i = 0; i < 2; i++) {
+            printf("%x ", 0xFF&decoded[i]);
+        }
         printf("\n");
         delete [] encoded;
+        delete [] decoded;
     }
     {
         printf("test: encode(\"");
@@ -179,10 +197,10 @@ bool Hamming::test() {
         for (int i = 0; i < len; i++) {
             printf("%x ", 0xFF&encoded[i]);
         }
-        printf("\n");
+        printf("\ndecoded:");
         char *decoded = new char[4];
         Hamming h2(encoded, decoded, len);
-        h.decode();
+        h2.decode();
         for (int i = 0; i < 4; i++) {
             printf("%x ", 0xFF&decoded[i]);
         }
@@ -191,4 +209,3 @@ bool Hamming::test() {
         delete [] decoded;
     }
 }
-#endif
