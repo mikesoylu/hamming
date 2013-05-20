@@ -15,15 +15,18 @@ class Hamming {
         static bool getBit(unsigned char byte, int bit);
         static void setBit(char &byte, int bit, bool value);
 
+        // gets the value of a parity bit at position bit which IS_POWER_OF_TWO
+        bool getParityBit(char *data, int bit, int data_bits);
+
     public:
         Hamming(char *packet, char *dest, int packet_length):
             packet(packet), dest(dest), packet_length(packet_length) { };
 
-        // encodes a packet of length getEncodedLength
+        // encodes packet of length getEncodedLength to dest
         // dest should be alloc'd before calling.(use getEncodedLength)
         void encode();
 
-        // decodes a packet of length getDecodedLength
+        // decodes a packet of length getDecodedLength to dest
         // dest should be alloc'd before calling.(use getDecodedLength)
         void decode();
 

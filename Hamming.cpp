@@ -19,6 +19,20 @@ void Hamming::setBit(char &byte, int bit, bool value) {
     }
 }
 
+bool Hamming::getParityBit(char *data, int bit, int data_bits) {
+    // convert to bit length
+    int numOnes = 0;
+    for (int j = bit-1; j < data_bits; j += 2*bit) {
+        for (int k = j; k < j+bit && k < data_bits; k++){
+            if (getBit(data[k/8], k%8)) {
+                numOnes++;
+            }
+        }
+    }
+    // set parity bit to 1 if numOnes is odd
+    return numOnes&1;
+}
+
 void Hamming::encode() {
     int destBit = 0;
     // write data bits to dest
@@ -44,27 +58,38 @@ void Hamming::encode() {
 
     // write parity bits
     for (int i = 1; i < destBit; i <<= 1) {
-        int numOnes = 0;
-        for (int j = i-1; j < destBit; j += 2*i) {
-            for (int k = j; k < j+i && k < destBit; k++){
-                bool bit = getBit(dest[k/8], k%8);
-#ifdef DEBUG
-                printf("%d at i:%d dest[%d] bit %d\n", bit, i, k/8, k%8);
-#endif
-                if (bit) {
-                    numOnes++;
-                }
-            }
-        }
-#ifdef DEBUG
-        printf("setting i:%d dest[%d] bit %d\n", i, (i-1)/8, (i-1)%8);
-#endif
-        // set parity bit to 1 if numOnes is odd
-        setBit(dest[(i-1)/8], (i-1)%8, numOnes&1);
+        setBit(dest[(i-1)/8], (i-1)%8, getParityBit(dest, i, destBit));
     }
 }
 
 void Hamming::decode() {
+    int errBit = -1;
+    // fix error
+    for (int i = 0; i < packet_length; i++) {
+        for (int j = 0; j < 8; j++) {
+            int bit = i*8 + j;
+            // is it a parity bit
+            if (IS_POWER_OF_TWO(bit + 1) &&
+                    getBit(packet[i], j) != getParityBit(packet, bit+1, packet_length*8)) {
+                errBit += bit + 1;
+            }
+        }
+    }
+    if (errBit != -1) {
+        setBit(packet[errBit/8], errBit%8, !getBit(packet[errBit/8], errBit%8));
+    }
+
+    // write data
+    int destBit = 0;
+    for (int i = 0; i < packet_length; i++) {
+        for (int j = 0; j < 8; j++) {
+            int bit = i*8 + j;
+            // is it a parity bit
+            if (!IS_POWER_OF_TWO(bit + 1)) {
+                setBit(dest[destBit/8], destBit%8, getBit(packet[i], j));
+            }
+        }
+    }
 }
 
 int Hamming::getEncodedLength(int packet_length) {
@@ -155,7 +180,15 @@ bool Hamming::test() {
             printf("%x ", 0xFF&encoded[i]);
         }
         printf("\n");
+        char *decoded = new char[4];
+        Hamming h2(encoded, decoded, len);
+        h.decode();
+        for (int i = 0; i < 4; i++) {
+            printf("%x ", 0xFF&decoded[i]);
+        }
+        printf("\n");
         delete [] encoded;
+        delete [] decoded;
     }
 }
 #endif
